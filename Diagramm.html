@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>UL(E) und IK(E) Diagramm</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+
+    h1 {
+      font-size: 1.4rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      background: #ffffff;
+      padding: 20px;
+      border-radius: 16px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.06);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    label {
+      font-size: 0.9rem;
+      font-weight: 600;
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    textarea, input {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 8px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-family: inherit;
+      font-size: 0.9rem;
+      resize: vertical;
+      min-height: 60px;
+    }
+
+    .hint {
+      font-size: 0.75rem;
+      color: #666;
+      margin-top: 2px;
+    }
+
+    button {
+      padding: 10px 16px;
+      border-radius: 999px;
+      border: none;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 0.95rem;
+      margin-top: 4px;
+    }
+
+    #plotBtn {
+      background: #2563eb;
+      color: #ffffff;
+    }
+
+    #resetBtn {
+      background: #e5e7eb;
+      color: #111827;
+      margin-left: 8px;
+    }
+
+    #error {
+      color: #b91c1c;
+      font-size: 0.8rem;
+      margin-top: 8px;
+      min-height: 1em;
+    }
+
+    .chart-container {
+      margin-top: 20px;
+    }
+
+    canvas {
+      background: #ffffff;
+      border-radius: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Diagramm: UL = f(E) und IK = f(E)</h1>
+    <p>Trage deine Messwerte für <strong>E</strong>, <strong>UL</strong> und <strong>IK</strong> ein (kommagetrennt). Klicke dann auf <em>Zeichnen</em>, um die Funktionen zu plotten.</p>
+
+    <div class="grid">
+      <div>
+        <label for="eValues">E-Werte (z.B. Spannung der Quelle E)</label>
+        <textarea id="eValues" placeholder="z.B. 0, 2, 4, 6, 8"></textarea>
+        <div class="hint">Liste von Zahlen, durch Komma getrennt.</div>
+      </div>
+
+      <div>
+        <label for="ulValues">UL-Werte (linke Y-Achse)</label>
+        <textarea id="ulValues" placeholder="z.B. 0, 1.5, 3.0, 4.5, 6.0"></textarea>
+        <div class="hint">Gleiche Anzahl an Werten wie E.</div>
+      </div>
+
+      <div>
+        <label for="ikValues">IK-Werte (rechte Y-Achse)</label>
+        <textarea id="ikValues" placeholder="z.B. 10, 8, 6, 4, 2"></textarea>
+        <div class="hint">Gleiche Anzahl an Werten wie E.</div>
+      </div>
+    </div>
+
+    <button id="plotBtn">Zeichnen</button>
+    <button id="resetBtn" type="button">Zurücksetzen</button>
+    <div id="error"></div>
+
+    <div class="chart-container">
+      <canvas id="myChart" height="120"></canvas>
+    </div>
+  </div>
+
+  <script>
+    let chartInstance = null;
+
+    function parseValues(str) {
+      return str
+        .split(',')
+        .map(s => s.trim())
+        .filter(s => s.length > 0)
+        .map(Number)
+        .filter(v => !isNaN(v));
+    }
+
+    document.getElementById('plotBtn').addEventListener('click', () => {
+      const errorDiv = document.getElementById('error');
+      errorDiv.textContent = '';
+
+      const eArr = parseValues(document.getElementById('eValues').value);
+      const ulArr = parseValues(document.getElementById('ulValues').value);
+      const ikArr = parseValues(document.getElementById('ikValues').value);
+
+      if (!eArr.length || !ulArr.length || !ikArr.length) {
+        errorDiv.textContent = 'Bitte alle drei Felder mit Zahlen füllen.';
+        return;
+      }
+
+      if (eArr.length !== ulArr.length || eArr.length !== ikArr.length) {
+        errorDiv.textContent = 'Die Anzahl der Werte in E, UL und IK muss gleich sein.';
+        return;
+      }
+
+      // Sortierung nach E (falls nicht aufsteigend eingetragen)
+      const combined = eArr.map((e, i) => ({
+        e,
+        ul: ulArr[i],
+        ik: ikArr[i]
+      })).sort((a, b) => a.e - b.e);
+
+      const labels = combined.map(p => p.e);
+      const ulSorted = combined.map(p => p.ul);
+      const ikSorted = combined.map(p => p.ik);
+
+      const ctx = document.getElementById('myChart').getContext('2d');
+
+      if (chartInstance) {
+        chartInstance.destroy();
+      }
+
+      chartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'UL(E)',
+              data: ulSorted,
+              yAxisID: 'yUL',
+              tension: 0,
+              pointRadius: 4,
+              borderWidth: 2
+            },
+            {
+              label: 'IK(E)',
+              data: ikSorted,
+              yAxisID: 'yIK',
+              tension: 0,
+              pointRadius: 4,
+              borderWidth: 2,
+              borderDash: [5, 5]
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          interaction: {
+            mode: 'nearest',
+            intersect: false
+          },
+          plugins: {
+            tooltip: {
+              callbacks: {
+                title: (items) => 'E = ' + items[0].label
+              }
+            },
+            legend: {
+              position: 'top'
+            },
+            title: {
+              display: true,
+              text: 'UL = f(E) (links) und IK = f(E) (rechts)'
+            }
+          },
+          scales: {
+            x: {
+              title: {
+                display: true,
+                text: 'E'
+              }
+            },
+            yUL: {
+              type: 'linear',
+              position: 'left',
+              title: {
+                display: true,
+                text: 'UL'
+              }
+            },
+            yIK: {
+              type: 'linear',
+              position: 'right',
+              title: {
+                display: true,
+                text: 'IK'
+              },
+              grid: {
+                drawOnChartArea: false
+              }
+            }
+          }
+        }
+      });
+    });
+
+    document.getElementById('resetBtn').addEventListener('click', () => {
+      document.getElementById('eValues').value = '';
+      document.getElementById('ulValues').value = '';
+      document.getElementById('ikValues').value = '';
+      document.getElementById('error').textContent = '';
+      if (chartInstance) {
+        chartInstance.destroy();
+        chartInstance = null;
+      }
+    });
+  </script>
+</body>
+</html>
