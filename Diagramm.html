@@ -10,6 +10,7 @@
       margin: 0;
       padding: 20px;
       background: #f5f5f5;
+      color: #111827;
     }
 
     h1 {
@@ -17,9 +18,14 @@
       margin-bottom: 0.5rem;
     }
 
+    h2 {
+      font-size: 1.2rem;
+      margin: 0 0 0.5rem;
+    }
+
     .container {
       max-width: 900px;
-      margin: 0 auto;
+      margin: 0 auto 24px;
       background: #ffffff;
       padding: 20px;
       border-radius: 16px;
@@ -40,7 +46,7 @@
       margin-bottom: 4px;
     }
 
-    textarea, input {
+    textarea, input[type="number"] {
       width: 100%;
       box-sizing: border-box;
       padding: 8px;
@@ -50,6 +56,10 @@
       font-size: 0.9rem;
       resize: vertical;
       min-height: 60px;
+    }
+
+    input[type="number"] {
+      min-height: auto;
     }
 
     .hint {
@@ -68,18 +78,18 @@
       margin-top: 4px;
     }
 
-    #plotBtn {
+    #plotBtn, #plotAngleBtn {
       background: #2563eb;
       color: #ffffff;
     }
 
-    #resetBtn {
+    #resetBtn, #resetAngleBtn {
       background: #e5e7eb;
       color: #111827;
       margin-left: 8px;
     }
 
-    #error {
+    #error, #angleError {
       color: #b91c1c;
       font-size: 0.8rem;
       margin-top: 8px;
@@ -93,6 +103,36 @@
     canvas {
       background: #ffffff;
       border-radius: 12px;
+    }
+
+    .table-wrapper {
+      overflow-x: auto;
+      margin-bottom: 12px;
+    }
+
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+
+    .data-table th,
+    .data-table td {
+      border: 1px solid #d1d5db;
+      padding: 8px;
+      text-align: left;
+    }
+
+    .data-table th {
+      background: #f3f4f6;
+      font-weight: 600;
+    }
+
+    .table-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
     }
   </style>
 </head>
@@ -130,8 +170,65 @@
     </div>
   </div>
 
+  <div class="container">
+    <h2>Tabelle zwei: IK in Abhängigkeit vom Winkel</h2>
+    <p>Trage hier die gemessenen Stromstärken <strong>IK</strong> für die Winkel in Grad ein. Das Diagramm darunter zeigt die Werte aufgetragen mit Winkel auf der X-Achse.</p>
+
+    <div class="table-wrapper">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Winkel (°)</th>
+            <th>IK</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>90°</td>
+            <td><input class="angle-input" data-angle="90" type="number" step="any" placeholder="IK bei 90°"></td>
+          </tr>
+          <tr>
+            <td>75°</td>
+            <td><input class="angle-input" data-angle="75" type="number" step="any" placeholder="IK bei 75°"></td>
+          </tr>
+          <tr>
+            <td>60°</td>
+            <td><input class="angle-input" data-angle="60" type="number" step="any" placeholder="IK bei 60°"></td>
+          </tr>
+          <tr>
+            <td>45°</td>
+            <td><input class="angle-input" data-angle="45" type="number" step="any" placeholder="IK bei 45°"></td>
+          </tr>
+          <tr>
+            <td>30°</td>
+            <td><input class="angle-input" data-angle="30" type="number" step="any" placeholder="IK bei 30°"></td>
+          </tr>
+          <tr>
+            <td>15°</td>
+            <td><input class="angle-input" data-angle="15" type="number" step="any" placeholder="IK bei 15°"></td>
+          </tr>
+          <tr>
+            <td>0°</td>
+            <td><input class="angle-input" data-angle="0" type="number" step="any" placeholder="IK bei 0°"></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="table-actions">
+      <button id="plotAngleBtn">Zeichnen</button>
+      <button id="resetAngleBtn" type="button">Zurücksetzen</button>
+      <div id="angleError"></div>
+    </div>
+
+    <div class="chart-container">
+      <canvas id="angleChart" height="120"></canvas>
+    </div>
+  </div>
+
   <script>
     let chartInstance = null;
+    let angleChartInstance = null;
 
     function parseValues(str) {
       return str
@@ -140,6 +237,35 @@
         .filter(s => s.length > 0)
         .map(Number)
         .filter(v => !isNaN(v));
+    }
+
+    function calculateScaleBounds(values) {
+      if (!values.length) {
+        return { min: 0, max: 1, step: 1 };
+      }
+
+      let minVal = Math.min(...values);
+      let maxVal = Math.max(...values);
+
+      if (minVal === maxVal) {
+        const padding = Math.abs(minVal) * 0.5 || 1;
+        minVal -= padding;
+        maxVal += padding;
+      }
+
+      const range = maxVal - minVal;
+      const roughStep = range / 5 || Math.abs(maxVal) / 5 || 1;
+      const magnitude = Math.pow(10, Math.floor(Math.log10(roughStep)));
+      const niceSteps = [1, 2, 5, 10];
+      let step = niceSteps.map(n => n * magnitude).find(s => roughStep <= s);
+      if (!step) {
+        step = niceSteps[niceSteps.length - 1] * magnitude;
+      }
+
+      const minTick = minVal < 0 ? Math.floor(minVal / step) * step : 0;
+      const maxTick = Math.ceil(maxVal / step) * step;
+
+      return { min: minTick, max: maxTick, step };
     }
 
     document.getElementById('plotBtn').addEventListener('click', () => {
@@ -160,7 +286,6 @@
         return;
       }
 
-      // Sortierung nach E (falls nicht aufsteigend eingetragen)
       const combined = eArr.map((e, i) => ({
         e,
         ul: ulArr[i],
@@ -170,6 +295,7 @@
       const labels = combined.map(p => p.e);
       const ulSorted = combined.map(p => p.ul);
       const ikSorted = combined.map(p => p.ik);
+      const scale = calculateScaleBounds([...ulSorted, ...ikSorted]);
 
       const ctx = document.getElementById('myChart').getContext('2d');
 
@@ -234,6 +360,11 @@
               title: {
                 display: true,
                 text: 'UL'
+              },
+              min: scale.min,
+              max: scale.max,
+              ticks: {
+                stepSize: scale.step
               }
             },
             yIK: {
@@ -245,6 +376,11 @@
               },
               grid: {
                 drawOnChartArea: false
+              },
+              min: scale.min,
+              max: scale.max,
+              ticks: {
+                stepSize: scale.step
               }
             }
           }
@@ -260,6 +396,100 @@
       if (chartInstance) {
         chartInstance.destroy();
         chartInstance = null;
+      }
+    });
+
+    const angleInputs = Array.from(document.querySelectorAll('.angle-input'));
+    const angles = angleInputs.map(input => Number(input.dataset.angle));
+
+    document.getElementById('plotAngleBtn').addEventListener('click', () => {
+      const angleError = document.getElementById('angleError');
+      angleError.textContent = '';
+
+      const filledAngles = [];
+      const filledValues = [];
+
+      angleInputs.forEach((input, index) => {
+        const value = input.value.trim();
+        if (value !== '') {
+          const num = Number(value.replace(',', '.'));
+          if (!isNaN(num)) {
+            filledAngles.push(angles[index]);
+            filledValues.push(num);
+          }
+        }
+      });
+
+      if (!filledValues.length) {
+        angleError.textContent = 'Bitte mindestens einen IK-Wert eingeben.';
+        return;
+      }
+
+      const scale = calculateScaleBounds(filledValues);
+      const ctx = document.getElementById('angleChart').getContext('2d');
+
+      if (angleChartInstance) {
+        angleChartInstance.destroy();
+      }
+
+      angleChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: filledAngles,
+          datasets: [
+            {
+              label: 'IK(φ)',
+              data: filledValues,
+              tension: 0,
+              pointRadius: 4,
+              borderWidth: 2
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          interaction: {
+            mode: 'nearest',
+            intersect: false
+          },
+          plugins: {
+            legend: {
+              position: 'top'
+            },
+            title: {
+              display: true,
+              text: 'IK in Abhängigkeit vom Winkel'
+            }
+          },
+          scales: {
+            x: {
+              title: {
+                display: true,
+                text: 'Winkel (°)'
+              }
+            },
+            y: {
+              title: {
+                display: true,
+                text: 'IK'
+              },
+              min: scale.min,
+              max: scale.max,
+              ticks: {
+                stepSize: scale.step
+              }
+            }
+          }
+        }
+      });
+    });
+
+    document.getElementById('resetAngleBtn').addEventListener('click', () => {
+      angleInputs.forEach(input => input.value = '');
+      document.getElementById('angleError').textContent = '';
+      if (angleChartInstance) {
+        angleChartInstance.destroy();
+        angleChartInstance = null;
       }
     });
   </script>
