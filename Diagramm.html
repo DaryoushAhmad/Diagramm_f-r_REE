@@ -278,35 +278,28 @@
     <h2>Diagramm: I = f(U) für unterschiedliche Helligkeitsstufen</h2>
     <p>Trage hier die gemessenen <strong>U</strong>-Werte sowie die zugehörigen <strong>I</strong>-Werte für die Helligkeitsstufen 10 und 8 und zusätzlich deine berechnete <strong>P(U)</strong>-Kennlinie ein.</p>
 
-    <div class="grid">
-      <div>
-        <label for="uValues">U-Werte</label>
-        <textarea id="uValues" placeholder="z.B. 0, 2, 4, 6, 8"></textarea>
-        <div class="hint">Liste von Zahlen, durch Komma getrennt.</div>
-      </div>
-
-      <div>
-        <label for="iLevel10">I-Werte (Stufe 10)</label>
-        <textarea id="iLevel10" placeholder="z.B. 0, 1.2, 2.5, 3.7, 4.8"></textarea>
-        <div class="hint">Gleiche Anzahl an Werten wie U.</div>
-      </div>
-
-      <div>
-        <label for="iLevel8">I-Werte (Stufe 8)</label>
-        <textarea id="iLevel8" placeholder="z.B. 0, 1.0, 2.1, 3.0, 3.9"></textarea>
-        <div class="hint">Gleiche Anzahl an Werten wie U.</div>
-      </div>
-
-      <div>
-        <label for="pValues">P-Werte</label>
-        <textarea id="pValues" placeholder="z.B. 0, 2.4, 4.8, 7.5, 9.2"></textarea>
-        <div class="hint">Gleiche Anzahl an Werten wie U.</div>
-      </div>
+    <div class="table-wrapper">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>U</th>
+            <th>I (Stufe 10)</th>
+            <th>I (Stufe 8)</th>
+            <th>P(U)</th>
+          </tr>
+        </thead>
+        <tbody id="brightnessBody"></tbody>
+      </table>
     </div>
 
-    <button id="plotBrightnessBtn">Zeichnen</button>
-    <button id="resetBrightnessBtn" type="button">Zurücksetzen</button>
-    <div id="brightnessError" class="status"></div>
+    <div class="table-actions">
+      <div class="button-group">
+        <button id="plotBrightnessBtn">Zeichnen</button>
+        <button id="resetBrightnessBtn" type="button">Zurücksetzen</button>
+        <button id="addBrightnessRowBtn" type="button">+ Zeile</button>
+      </div>
+      <div id="brightnessError" class="status"></div>
+    </div>
 
     <div class="dataset-toggles">
       <label><input type="checkbox" id="toggleLevel10" checked> I(U) Stufe 10 anzeigen</label>
@@ -325,16 +318,9 @@
     let brightnessChartInstance = null;
 
     const measurementBody = document.getElementById('measurementBody');
+    const brightnessBody = document.getElementById('brightnessBody');
     const INITIAL_MEASUREMENT_ROWS = 6;
-
-    function parseValues(str) {
-      return str
-        .split(',')
-        .map(s => s.trim())
-        .filter(s => s.length > 0)
-        .map(Number)
-        .filter(v => !isNaN(v));
-    }
+    const INITIAL_BRIGHTNESS_ROWS = 6;
 
     function calculateScaleBounds(values) {
       if (!values.length) {
@@ -394,6 +380,25 @@
       input.placeholder = placeholder;
       input.className = `measurement-input ${className}`;
       return input;
+    }
+
+    function addBrightnessRow() {
+      const row = document.createElement('tr');
+      const uCell = document.createElement('td');
+      const i10Cell = document.createElement('td');
+      const i8Cell = document.createElement('td');
+      const pCell = document.createElement('td');
+
+      uCell.appendChild(createMeasurementInput('brightness-u', 'U-Wert'));
+      i10Cell.appendChild(createMeasurementInput('brightness-i10', 'I Stufe 10'));
+      i8Cell.appendChild(createMeasurementInput('brightness-i8', 'I Stufe 8'));
+      pCell.appendChild(createMeasurementInput('brightness-p', 'P-Wert'));
+
+      row.appendChild(uCell);
+      row.appendChild(i10Cell);
+      row.appendChild(i8Cell);
+      row.appendChild(pCell);
+      brightnessBody.appendChild(row);
     }
 
     function addMeasurementRow() {
@@ -460,12 +465,72 @@
       }
     }
 
+    function collectBrightnessData() {
+      const rows = Array.from(brightnessBody.querySelectorAll('tr'));
+      const uArr = [];
+      const iLevel10Arr = [];
+      const iLevel8Arr = [];
+      const pArr = [];
+
+      for (const row of rows) {
+        const uVal = row.querySelector('.brightness-u').value.trim();
+        const i10Val = row.querySelector('.brightness-i10').value.trim();
+        const i8Val = row.querySelector('.brightness-i8').value.trim();
+        const pVal = row.querySelector('.brightness-p').value.trim();
+        const anyFilled = uVal || i10Val || i8Val || pVal;
+
+        if (!anyFilled) {
+          continue;
+        }
+
+        if (!uVal || !i10Val || !i8Val || !pVal) {
+          return { error: 'Bitte jede ausgefüllte Zeile komplett ausfüllen.' };
+        }
+
+        const uNum = parseNumber(uVal);
+        const i10Num = parseNumber(i10Val);
+        const i8Num = parseNumber(i8Val);
+        const pNum = parseNumber(pVal);
+
+        if (uNum === null || i10Num === null || i8Num === null || pNum === null) {
+          return { error: 'Bitte nur gültige Zahlen verwenden (Komma oder Punkt).' };
+        }
+
+        uArr.push(uNum);
+        iLevel10Arr.push(i10Num);
+        iLevel8Arr.push(i8Num);
+        pArr.push(pNum);
+      }
+
+      if (!uArr.length) {
+        return { error: 'Bitte mindestens eine vollständige Messreihe eintragen.' };
+      }
+
+      return { uArr, iLevel10Arr, iLevel8Arr, pArr };
+    }
+
+    function resetBrightnessTable() {
+      const rows = Array.from(brightnessBody.querySelectorAll('tr'));
+      rows.forEach(row => row.querySelectorAll('input').forEach(input => input.value = ''));
+      while (brightnessBody.rows.length > INITIAL_BRIGHTNESS_ROWS) {
+        brightnessBody.deleteRow(-1);
+      }
+    }
+
     for (let i = 0; i < INITIAL_MEASUREMENT_ROWS; i++) {
       addMeasurementRow();
     }
 
     document.getElementById('addRowBtn').addEventListener('click', () => {
       addMeasurementRow();
+    });
+
+    for (let i = 0; i < INITIAL_BRIGHTNESS_ROWS; i++) {
+      addBrightnessRow();
+    }
+
+    document.getElementById('addBrightnessRowBtn').addEventListener('click', () => {
+      addBrightnessRow();
     });
 
     document.getElementById('plotBtn').addEventListener('click', () => {
@@ -704,20 +769,14 @@
       const errorDiv = document.getElementById('brightnessError');
       errorDiv.textContent = '';
 
-      const uArr = parseValues(document.getElementById('uValues').value);
-      const iLevel10Arr = parseValues(document.getElementById('iLevel10').value);
-      const iLevel8Arr = parseValues(document.getElementById('iLevel8').value);
-      const pArr = parseValues(document.getElementById('pValues').value);
+      const brightnessData = collectBrightnessData();
 
-      if (!uArr.length || !iLevel10Arr.length || !iLevel8Arr.length || !pArr.length) {
-        errorDiv.textContent = 'Bitte alle vier Felder mit Zahlen füllen.';
+      if (brightnessData.error) {
+        errorDiv.textContent = brightnessData.error;
         return;
       }
 
-      if (uArr.length !== iLevel10Arr.length || uArr.length !== iLevel8Arr.length || uArr.length !== pArr.length) {
-        errorDiv.textContent = 'Die Anzahl der Werte in U, I(Stufe 10), I(Stufe 8) und P muss gleich sein.';
-        return;
-      }
+      const { uArr, iLevel10Arr, iLevel8Arr, pArr } = brightnessData;
 
       const combined = uArr.map((u, i) => ({
         u,
@@ -844,10 +903,7 @@
     });
 
     document.getElementById('resetBrightnessBtn').addEventListener('click', () => {
-      document.getElementById('uValues').value = '';
-      document.getElementById('iLevel10').value = '';
-      document.getElementById('iLevel8').value = '';
-      document.getElementById('pValues').value = '';
+      resetBrightnessTable();
       document.getElementById('brightnessError').textContent = '';
       if (brightnessChartInstance) {
         brightnessChartInstance.destroy();
