@@ -32,13 +32,6 @@
       box-shadow: 0 10px 25px rgba(0,0,0,0.06);
     }
 
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 16px;
-      margin-bottom: 16px;
-    }
-
     label {
       font-size: 0.9rem;
       font-weight: 600;
@@ -89,11 +82,18 @@
       margin-left: 8px;
     }
 
-    #error, #angleError {
+    .status {
       color: #b91c1c;
       font-size: 0.8rem;
       margin-top: 8px;
       min-height: 1em;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-bottom: 16px;
     }
 
     .chart-container {
@@ -133,37 +133,79 @@
       flex-wrap: wrap;
       align-items: center;
       gap: 8px;
+      justify-content: space-between;
+    }
+
+    .button-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .table-actions .status {
+      flex: 1;
+      min-width: 200px;
+    }
+
+    .measurement-input {
+      width: 100%;
+      padding: 6px;
+      border-radius: 8px;
+      border: 1px solid #d1d5db;
+      font-size: 0.9rem;
+      font-family: inherit;
+      box-sizing: border-box;
+    }
+
+    .dataset-toggles {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 12px;
+      font-size: 0.85rem;
+    }
+
+    .dataset-toggles label {
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
     }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>Diagramm: UL = f(E) und IK = f(E)</h1>
-    <p>Trage deine Messwerte für <strong>E</strong>, <strong>UL</strong> und <strong>IK</strong> ein (kommagetrennt). Klicke dann auf <em>Zeichnen</em>, um die Funktionen zu plotten.</p>
+    <p>Trage deine Messreihen tabellarisch ein, damit direkt ersichtlich ist, welches <strong>E</strong> zu welchem <strong>UL</strong> und <strong>IK</strong> gehört.</p>
 
-    <div class="grid">
-      <div>
-        <label for="eValues">E-Werte (z.B. Spannung der Quelle E)</label>
-        <textarea id="eValues" placeholder="z.B. 0, 2, 4, 6, 8"></textarea>
-        <div class="hint">Liste von Zahlen, durch Komma getrennt.</div>
-      </div>
-
-      <div>
-        <label for="ulValues">UL-Werte (linke Y-Achse)</label>
-        <textarea id="ulValues" placeholder="z.B. 0, 1.5, 3.0, 4.5, 6.0"></textarea>
-        <div class="hint">Gleiche Anzahl an Werten wie E.</div>
-      </div>
-
-      <div>
-        <label for="ikValues">IK-Werte (rechte Y-Achse)</label>
-        <textarea id="ikValues" placeholder="z.B. 10, 8, 6, 4, 2"></textarea>
-        <div class="hint">Gleiche Anzahl an Werten wie E.</div>
-      </div>
+    <div class="table-wrapper">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>E</th>
+            <th>UL</th>
+            <th>IK</th>
+          </tr>
+        </thead>
+        <tbody id="measurementBody"></tbody>
+      </table>
     </div>
 
-    <button id="plotBtn">Zeichnen</button>
-    <button id="resetBtn" type="button">Zurücksetzen</button>
-    <div id="error"></div>
+    <div class="table-actions">
+      <div class="button-group">
+        <button id="plotBtn">Zeichnen</button>
+        <button id="resetBtn" type="button">Zurücksetzen</button>
+        <button id="addRowBtn" type="button">+ Zeile</button>
+      </div>
+      <div id="error" class="status"></div>
+    </div>
+
+    <div class="dataset-toggles">
+      <label><input type="checkbox" id="toggleUL" checked> UL(E) anzeigen</label>
+      <label><input type="checkbox" id="toggleIK" checked> IK(E) anzeigen</label>
+    </div>
 
     <div class="chart-container">
       <canvas id="myChart" height="120"></canvas>
@@ -216,9 +258,15 @@
     </div>
 
     <div class="table-actions">
-      <button id="plotAngleBtn">Zeichnen</button>
-      <button id="resetAngleBtn" type="button">Zurücksetzen</button>
-      <div id="angleError"></div>
+      <div class="button-group">
+        <button id="plotAngleBtn">Zeichnen</button>
+        <button id="resetAngleBtn" type="button">Zurücksetzen</button>
+      </div>
+      <div id="angleError" class="status"></div>
+    </div>
+
+    <div class="dataset-toggles">
+      <label><input type="checkbox" id="toggleAngle" checked> IK(φ) anzeigen</label>
     </div>
 
     <div class="chart-container">
@@ -226,9 +274,58 @@
     </div>
   </div>
 
+  <div class="container">
+    <h2>Diagramm: I = f(U) für unterschiedliche Helligkeitsstufen</h2>
+    <p>Trage hier die gemessenen <strong>U</strong>-Werte sowie die zugehörigen <strong>I</strong>-Werte für die Helligkeitsstufen 10 und 8 und zusätzlich deine berechnete <strong>P(U)</strong>-Kennlinie ein.</p>
+
+    <div class="grid">
+      <div>
+        <label for="uValues">U-Werte</label>
+        <textarea id="uValues" placeholder="z.B. 0, 2, 4, 6, 8"></textarea>
+        <div class="hint">Liste von Zahlen, durch Komma getrennt.</div>
+      </div>
+
+      <div>
+        <label for="iLevel10">I-Werte (Stufe 10)</label>
+        <textarea id="iLevel10" placeholder="z.B. 0, 1.2, 2.5, 3.7, 4.8"></textarea>
+        <div class="hint">Gleiche Anzahl an Werten wie U.</div>
+      </div>
+
+      <div>
+        <label for="iLevel8">I-Werte (Stufe 8)</label>
+        <textarea id="iLevel8" placeholder="z.B. 0, 1.0, 2.1, 3.0, 3.9"></textarea>
+        <div class="hint">Gleiche Anzahl an Werten wie U.</div>
+      </div>
+
+      <div>
+        <label for="pValues">P-Werte</label>
+        <textarea id="pValues" placeholder="z.B. 0, 2.4, 4.8, 7.5, 9.2"></textarea>
+        <div class="hint">Gleiche Anzahl an Werten wie U.</div>
+      </div>
+    </div>
+
+    <button id="plotBrightnessBtn">Zeichnen</button>
+    <button id="resetBrightnessBtn" type="button">Zurücksetzen</button>
+    <div id="brightnessError" class="status"></div>
+
+    <div class="dataset-toggles">
+      <label><input type="checkbox" id="toggleLevel10" checked> I(U) Stufe 10 anzeigen</label>
+      <label><input type="checkbox" id="toggleLevel8" checked> I(U) Stufe 8 anzeigen</label>
+      <label><input type="checkbox" id="togglePower" checked> P(U) anzeigen</label>
+    </div>
+
+    <div class="chart-container">
+      <canvas id="brightnessChart" height="120"></canvas>
+    </div>
+  </div>
+
   <script>
     let chartInstance = null;
     let angleChartInstance = null;
+    let brightnessChartInstance = null;
+
+    const measurementBody = document.getElementById('measurementBody');
+    const INITIAL_MEASUREMENT_ROWS = 6;
 
     function parseValues(str) {
       return str
@@ -268,23 +365,121 @@
       return { min: minTick, max: maxTick, step };
     }
 
+    function updateDatasetVisibility(chart, label, visible) {
+      if (!chart) return;
+      const datasetIndex = chart.data.datasets.findIndex(ds => ds.label === label);
+      if (datasetIndex === -1) return;
+      chart.setDatasetVisibility(datasetIndex, visible);
+      chart.update();
+    }
+
+    function connectToggle(checkboxId, chartAccessor, label) {
+      const checkbox = document.getElementById(checkboxId);
+      if (!checkbox) return;
+      checkbox.addEventListener('change', () => {
+        updateDatasetVisibility(chartAccessor(), label, checkbox.checked);
+      });
+    }
+
+    function parseNumber(value) {
+      const normalized = value.replace(',', '.');
+      const num = Number(normalized);
+      return isNaN(num) ? null : num;
+    }
+
+    function createMeasurementInput(className, placeholder) {
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.inputMode = 'decimal';
+      input.placeholder = placeholder;
+      input.className = `measurement-input ${className}`;
+      return input;
+    }
+
+    function addMeasurementRow() {
+      const row = document.createElement('tr');
+      const eCell = document.createElement('td');
+      const ulCell = document.createElement('td');
+      const ikCell = document.createElement('td');
+
+      eCell.appendChild(createMeasurementInput('input-e', 'E-Wert'));
+      ulCell.appendChild(createMeasurementInput('input-ul', 'UL-Wert'));
+      ikCell.appendChild(createMeasurementInput('input-ik', 'IK-Wert'));
+
+      row.appendChild(eCell);
+      row.appendChild(ulCell);
+      row.appendChild(ikCell);
+      measurementBody.appendChild(row);
+    }
+
+    function collectMeasurementData() {
+      const rows = Array.from(measurementBody.querySelectorAll('tr'));
+      const eArr = [];
+      const ulArr = [];
+      const ikArr = [];
+
+      for (const row of rows) {
+        const eVal = row.querySelector('.input-e').value.trim();
+        const ulVal = row.querySelector('.input-ul').value.trim();
+        const ikVal = row.querySelector('.input-ik').value.trim();
+        const anyFilled = eVal || ulVal || ikVal;
+
+        if (!anyFilled) {
+          continue;
+        }
+
+        if (!eVal || !ulVal || !ikVal) {
+          return { error: 'Bitte jede ausgefüllte Zeile komplett ausfüllen.' };
+        }
+
+        const eNum = parseNumber(eVal);
+        const ulNum = parseNumber(ulVal);
+        const ikNum = parseNumber(ikVal);
+
+        if (eNum === null || ulNum === null || ikNum === null) {
+          return { error: 'Bitte nur gültige Zahlen verwenden (Komma oder Punkt).' };
+        }
+
+        eArr.push(eNum);
+        ulArr.push(ulNum);
+        ikArr.push(ikNum);
+      }
+
+      if (!eArr.length) {
+        return { error: 'Bitte mindestens eine vollständige Messreihe eintragen.' };
+      }
+
+      return { eArr, ulArr, ikArr };
+    }
+
+    function resetMeasurementTable() {
+      const rows = Array.from(measurementBody.querySelectorAll('tr'));
+      rows.forEach(row => row.querySelectorAll('input').forEach(input => input.value = ''));
+      while (measurementBody.rows.length > INITIAL_MEASUREMENT_ROWS) {
+        measurementBody.deleteRow(-1);
+      }
+    }
+
+    for (let i = 0; i < INITIAL_MEASUREMENT_ROWS; i++) {
+      addMeasurementRow();
+    }
+
+    document.getElementById('addRowBtn').addEventListener('click', () => {
+      addMeasurementRow();
+    });
+
     document.getElementById('plotBtn').addEventListener('click', () => {
       const errorDiv = document.getElementById('error');
       errorDiv.textContent = '';
 
-      const eArr = parseValues(document.getElementById('eValues').value);
-      const ulArr = parseValues(document.getElementById('ulValues').value);
-      const ikArr = parseValues(document.getElementById('ikValues').value);
+      const measurementData = collectMeasurementData();
 
-      if (!eArr.length || !ulArr.length || !ikArr.length) {
-        errorDiv.textContent = 'Bitte alle drei Felder mit Zahlen füllen.';
+      if (measurementData.error) {
+        errorDiv.textContent = measurementData.error;
         return;
       }
 
-      if (eArr.length !== ulArr.length || eArr.length !== ikArr.length) {
-        errorDiv.textContent = 'Die Anzahl der Werte in E, UL und IK muss gleich sein.';
-        return;
-      }
+      const { eArr, ulArr, ikArr } = measurementData;
 
       const combined = eArr.map((e, i) => ({
         e,
@@ -386,12 +581,19 @@
           }
         }
       });
+
+      const toggleUL = document.getElementById('toggleUL');
+      const toggleIK = document.getElementById('toggleIK');
+      if (toggleUL) {
+        updateDatasetVisibility(chartInstance, 'UL(E)', toggleUL.checked);
+      }
+      if (toggleIK) {
+        updateDatasetVisibility(chartInstance, 'IK(E)', toggleIK.checked);
+      }
     });
 
     document.getElementById('resetBtn').addEventListener('click', () => {
-      document.getElementById('eValues').value = '';
-      document.getElementById('ulValues').value = '';
-      document.getElementById('ikValues').value = '';
+      resetMeasurementTable();
       document.getElementById('error').textContent = '';
       if (chartInstance) {
         chartInstance.destroy();
@@ -482,6 +684,11 @@
           }
         }
       });
+
+      const toggleAngle = document.getElementById('toggleAngle');
+      if (toggleAngle) {
+        updateDatasetVisibility(angleChartInstance, 'IK(φ)', toggleAngle.checked);
+      }
     });
 
     document.getElementById('resetAngleBtn').addEventListener('click', () => {
@@ -492,6 +699,168 @@
         angleChartInstance = null;
       }
     });
+
+    document.getElementById('plotBrightnessBtn').addEventListener('click', () => {
+      const errorDiv = document.getElementById('brightnessError');
+      errorDiv.textContent = '';
+
+      const uArr = parseValues(document.getElementById('uValues').value);
+      const iLevel10Arr = parseValues(document.getElementById('iLevel10').value);
+      const iLevel8Arr = parseValues(document.getElementById('iLevel8').value);
+      const pArr = parseValues(document.getElementById('pValues').value);
+
+      if (!uArr.length || !iLevel10Arr.length || !iLevel8Arr.length || !pArr.length) {
+        errorDiv.textContent = 'Bitte alle vier Felder mit Zahlen füllen.';
+        return;
+      }
+
+      if (uArr.length !== iLevel10Arr.length || uArr.length !== iLevel8Arr.length || uArr.length !== pArr.length) {
+        errorDiv.textContent = 'Die Anzahl der Werte in U, I(Stufe 10), I(Stufe 8) und P muss gleich sein.';
+        return;
+      }
+
+      const combined = uArr.map((u, i) => ({
+        u,
+        i10: iLevel10Arr[i],
+        i8: iLevel8Arr[i],
+        p: pArr[i]
+      })).sort((a, b) => a.u - b.u);
+
+      const labels = combined.map(p => p.u);
+      const level10Sorted = combined.map(p => p.i10);
+      const level8Sorted = combined.map(p => p.i8);
+      const powerSorted = combined.map(p => p.p);
+      const currentScale = calculateScaleBounds([...level10Sorted, ...level8Sorted]);
+      const powerScale = calculateScaleBounds(powerSorted);
+
+      const ctx = document.getElementById('brightnessChart').getContext('2d');
+
+      if (brightnessChartInstance) {
+        brightnessChartInstance.destroy();
+      }
+
+      brightnessChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'I(U) Stufe 10',
+              data: level10Sorted,
+              yAxisID: 'yCurrent',
+              borderColor: '#d97706',
+              backgroundColor: 'rgba(217, 119, 6, 0.1)',
+              tension: 0,
+              pointRadius: 4,
+              borderWidth: 2
+            },
+            {
+              label: 'I(U) Stufe 8',
+              data: level8Sorted,
+              yAxisID: 'yCurrent',
+              borderColor: '#0ea5e9',
+              backgroundColor: 'rgba(14, 165, 233, 0.1)',
+              tension: 0,
+              pointRadius: 4,
+              borderWidth: 2
+            },
+            {
+              label: 'P(U)',
+              data: powerSorted,
+              yAxisID: 'yPower',
+              borderColor: '#16a34a',
+              backgroundColor: 'rgba(22, 163, 74, 0.1)',
+              tension: 0,
+              pointRadius: 4,
+              borderWidth: 2,
+              borderDash: [6, 4]
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          interaction: {
+            mode: 'nearest',
+            intersect: false
+          },
+          plugins: {
+            legend: {
+              position: 'top'
+            },
+            title: {
+              display: true,
+              text: 'I = f(U) (Stufen 10 & 8) und P = f(U)'
+            }
+          },
+          scales: {
+            x: {
+              title: {
+                display: true,
+                text: 'U'
+              }
+            },
+            yCurrent: {
+              title: {
+                display: true,
+                text: 'I'
+              },
+              min: currentScale.min,
+              max: currentScale.max,
+              ticks: {
+                stepSize: currentScale.step
+              }
+            },
+            yPower: {
+              position: 'right',
+              title: {
+                display: true,
+                text: 'P'
+              },
+              grid: {
+                drawOnChartArea: false
+              },
+              min: powerScale.min,
+              max: powerScale.max,
+              ticks: {
+                stepSize: powerScale.step
+              }
+            }
+          }
+        }
+      });
+
+      const toggleLevel10 = document.getElementById('toggleLevel10');
+      const toggleLevel8 = document.getElementById('toggleLevel8');
+      const togglePower = document.getElementById('togglePower');
+      if (toggleLevel10) {
+        updateDatasetVisibility(brightnessChartInstance, 'I(U) Stufe 10', toggleLevel10.checked);
+      }
+      if (toggleLevel8) {
+        updateDatasetVisibility(brightnessChartInstance, 'I(U) Stufe 8', toggleLevel8.checked);
+      }
+      if (togglePower) {
+        updateDatasetVisibility(brightnessChartInstance, 'P(U)', togglePower.checked);
+      }
+    });
+
+    document.getElementById('resetBrightnessBtn').addEventListener('click', () => {
+      document.getElementById('uValues').value = '';
+      document.getElementById('iLevel10').value = '';
+      document.getElementById('iLevel8').value = '';
+      document.getElementById('pValues').value = '';
+      document.getElementById('brightnessError').textContent = '';
+      if (brightnessChartInstance) {
+        brightnessChartInstance.destroy();
+        brightnessChartInstance = null;
+      }
+    });
+
+    connectToggle('toggleUL', () => chartInstance, 'UL(E)');
+    connectToggle('toggleIK', () => chartInstance, 'IK(E)');
+    connectToggle('toggleAngle', () => angleChartInstance, 'IK(φ)');
+    connectToggle('toggleLevel10', () => brightnessChartInstance, 'I(U) Stufe 10');
+    connectToggle('toggleLevel8', () => brightnessChartInstance, 'I(U) Stufe 8');
+    connectToggle('togglePower', () => brightnessChartInstance, 'P(U)');
   </script>
 </body>
 </html>
