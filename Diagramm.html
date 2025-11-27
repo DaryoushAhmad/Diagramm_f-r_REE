@@ -567,12 +567,13 @@
         e,
         ul: ulArr[i],
         ik: ikArr[i]
-      })).sort((a, b) => a.e - b.e);
+      }));
 
+      const firstEValue = combined[0].e;
       const ulPoints = combined.map(p => ({ x: p.e, y: p.ul }));
       const ikPoints = combined.map(p => ({ x: p.e, y: p.ik }));
       const scale = calculateScaleWithFixedStep([...ulPoints, ...ikPoints].map(p => p.y), 50);
-      const minX = combined.length ? combined[0].e : 0;
+      const minX = combined.length ? firstEValue : 0;
 
       const ctx = document.getElementById('myChart').getContext('2d');
 
