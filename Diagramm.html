@@ -208,7 +208,7 @@
     </div>
 
     <div class="chart-container">
-      <canvas id="myChart" height="180"></canvas>
+      <canvas id="myChart" height="120"></canvas>
     </div>
   </div>
 
@@ -349,23 +349,6 @@
       const maxTick = Math.ceil(maxVal / step) * step;
 
       return { min: minTick, max: maxTick, step };
-    }
-
-    function calculateScaleWithFixedStep(values, stepSize) {
-      if (!values.length) {
-        return { min: 0, max: stepSize, step: stepSize };
-      }
-
-      const minVal = Math.min(...values);
-      const maxVal = Math.max(...values);
-      let minTick = Math.floor(minVal / stepSize) * stepSize;
-      let maxTick = Math.ceil(maxVal / stepSize) * stepSize;
-
-      if (minTick === maxTick) {
-        maxTick += stepSize;
-      }
-
-      return { min: minTick, max: maxTick, step: stepSize };
     }
 
     function updateDatasetVisibility(chart, label, visible) {
@@ -567,17 +550,11 @@
         e,
         ul: ulArr[i],
         ik: ikArr[i]
-      }));
+      })).sort((a, b) => a.e - b.e);
 
       const ulPoints = combined.map(p => ({ x: p.e, y: p.ul }));
       const ikPoints = combined.map(p => ({ x: p.e, y: p.ik }));
-      const xValues = combined.map(point => point.e);
-      const minX = xValues.length ? Math.min(...xValues) : 0;
-      let maxX = xValues.length ? Math.max(...xValues) : 1;
-      if (minX === maxX) {
-        maxX = minX + 1;
-      }
-      const scale = calculateScaleWithFixedStep([...ulPoints, ...ikPoints].map(p => p.y), 50);
+      const scale = calculateScaleBounds([...ulPoints, ...ikPoints].map(p => p.y));
 
       const ctx = document.getElementById('myChart').getContext('2d');
 
@@ -590,7 +567,7 @@
         data: {
           datasets: [
             {
-              label: 'UL(E) [mV]',
+              label: 'UL(E)',
               data: ulPoints,
               yAxisID: 'yUL',
               tension: 0,
@@ -598,7 +575,7 @@
               borderWidth: 2
             },
             {
-              label: 'IK(E) [mA]',
+              label: 'IK(E)',
               data: ikPoints,
               yAxisID: 'yIK',
               tension: 0,
@@ -635,15 +612,14 @@
                 display: true,
                 text: 'E'
               },
-              min: minX,
-              max: maxX
+              min: 0
             },
             yUL: {
               type: 'linear',
               position: 'left',
               title: {
                 display: true,
-                text: 'UL (mV)'
+                text: 'UL'
               },
               min: scale.min,
               max: scale.max,
@@ -656,7 +632,7 @@
               position: 'right',
               title: {
                 display: true,
-                text: 'IK (mA)'
+                text: 'IK'
               },
               grid: {
                 drawOnChartArea: false
@@ -673,12 +649,12 @@
 
       const toggleUL = document.getElementById('toggleUL');
       const toggleIK = document.getElementById('toggleIK');
-        if (toggleUL) {
-          updateDatasetVisibility(chartInstance, 'UL(E) [mV]', toggleUL.checked);
-        }
-        if (toggleIK) {
-          updateDatasetVisibility(chartInstance, 'IK(E) [mA]', toggleIK.checked);
-        }
+      if (toggleUL) {
+        updateDatasetVisibility(chartInstance, 'UL(E)', toggleUL.checked);
+      }
+      if (toggleIK) {
+        updateDatasetVisibility(chartInstance, 'IK(E)', toggleIK.checked);
+      }
     });
 
     document.getElementById('resetBtn').addEventListener('click', () => {
@@ -938,8 +914,8 @@
       }
     });
 
-    connectToggle('toggleUL', () => chartInstance, 'UL(E) [mV]');
-    connectToggle('toggleIK', () => chartInstance, 'IK(E) [mA]');
+    connectToggle('toggleUL', () => chartInstance, 'UL(E)');
+    connectToggle('toggleIK', () => chartInstance, 'IK(E)');
     connectToggle('toggleAngle', () => angleChartInstance, 'IK(φ)');
     connectToggle('toggleLevel10', () => brightnessChartInstance, 'I(U) Stufe 10');
     connectToggle('toggleLevel8', () => brightnessChartInstance, 'I(U) Stufe 8');
