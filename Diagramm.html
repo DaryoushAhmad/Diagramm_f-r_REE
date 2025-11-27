@@ -569,11 +569,15 @@
         ik: ikArr[i]
       }));
 
-      const firstEValue = combined[0].e;
       const ulPoints = combined.map(p => ({ x: p.e, y: p.ul }));
       const ikPoints = combined.map(p => ({ x: p.e, y: p.ik }));
+      const xValues = combined.map(point => point.e);
+      const minX = xValues.length ? Math.min(...xValues) : 0;
+      let maxX = xValues.length ? Math.max(...xValues) : 1;
+      if (minX === maxX) {
+        maxX = minX + 1;
+      }
       const scale = calculateScaleWithFixedStep([...ulPoints, ...ikPoints].map(p => p.y), 50);
-      const minX = combined.length ? firstEValue : 0;
 
       const ctx = document.getElementById('myChart').getContext('2d');
 
@@ -631,7 +635,8 @@
                 display: true,
                 text: 'E'
               },
-              min: minX
+              min: minX,
+              max: maxX
             },
             yUL: {
               type: 'linear',
