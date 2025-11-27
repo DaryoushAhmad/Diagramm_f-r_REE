@@ -24,7 +24,7 @@
     }
 
     .container {
-      max-width: 900px;
+      max-width: 1100px;
       margin: 0 auto 24px;
       background: #ffffff;
       padding: 20px;
@@ -203,12 +203,12 @@
     </div>
 
     <div class="dataset-toggles">
-      <label><input type="checkbox" id="toggleUL" checked> UL(E) anzeigen</label>
-      <label><input type="checkbox" id="toggleIK" checked> IK(E) anzeigen</label>
+      <label><input type="checkbox" id="toggleUL" checked> UL(E) (mV) anzeigen</label>
+      <label><input type="checkbox" id="toggleIK" checked> IK(E) (mA) anzeigen</label>
     </div>
 
     <div class="chart-container">
-      <canvas id="myChart" height="120"></canvas>
+      <canvas id="myChart" height="220"></canvas>
     </div>
   </div>
 
@@ -556,6 +556,15 @@
       const ikPoints = combined.map(p => ({ x: p.e, y: p.ik }));
       const scale = calculateScaleBounds([...ulPoints, ...ikPoints].map(p => p.y));
 
+      const yStep = 50;
+      const yMin = Math.floor(scale.min / yStep) * yStep;
+      let yMax = Math.ceil(scale.max / yStep) * yStep;
+      if (yMax === yMin) {
+        yMax = yMin + yStep;
+      }
+
+      const xMin = combined[0].e;
+
       const ctx = document.getElementById('myChart').getContext('2d');
 
       if (chartInstance) {
@@ -567,7 +576,7 @@
         data: {
           datasets: [
             {
-              label: 'UL(E)',
+              label: 'UL(E) [mV]',
               data: ulPoints,
               yAxisID: 'yUL',
               tension: 0,
@@ -575,7 +584,7 @@
               borderWidth: 2
             },
             {
-              label: 'IK(E)',
+              label: 'IK(E) [mA]',
               data: ikPoints,
               yAxisID: 'yIK',
               tension: 0,
@@ -602,7 +611,7 @@
             },
             title: {
               display: true,
-              text: 'UL = f(E) (links) und IK = f(E) (rechts)'
+              text: 'UL = f(E) (links, mV) und IK = f(E) (rechts, mA)'
             }
           },
           scales: {
@@ -612,19 +621,19 @@
                 display: true,
                 text: 'E'
               },
-              min: 0
+              min: xMin
             },
             yUL: {
               type: 'linear',
               position: 'left',
               title: {
                 display: true,
-                text: 'UL'
+                text: 'UL (mV)'
               },
-              min: scale.min,
-              max: scale.max,
+              min: yMin,
+              max: yMax,
               ticks: {
-                stepSize: scale.step
+                stepSize: yStep
               }
             },
             yIK: {
@@ -632,15 +641,15 @@
               position: 'right',
               title: {
                 display: true,
-                text: 'IK'
+                text: 'IK (mA)'
               },
               grid: {
                 drawOnChartArea: false
               },
-              min: scale.min,
-              max: scale.max,
+              min: yMin,
+              max: yMax,
               ticks: {
-                stepSize: scale.step
+                stepSize: yStep
               }
             }
           }
@@ -650,10 +659,10 @@
       const toggleUL = document.getElementById('toggleUL');
       const toggleIK = document.getElementById('toggleIK');
       if (toggleUL) {
-        updateDatasetVisibility(chartInstance, 'UL(E)', toggleUL.checked);
+        updateDatasetVisibility(chartInstance, 'UL(E) [mV]', toggleUL.checked);
       }
       if (toggleIK) {
-        updateDatasetVisibility(chartInstance, 'IK(E)', toggleIK.checked);
+        updateDatasetVisibility(chartInstance, 'IK(E) [mA]', toggleIK.checked);
       }
     });
 
@@ -914,8 +923,8 @@
       }
     });
 
-    connectToggle('toggleUL', () => chartInstance, 'UL(E)');
-    connectToggle('toggleIK', () => chartInstance, 'IK(E)');
+    connectToggle('toggleUL', () => chartInstance, 'UL(E) [mV]');
+    connectToggle('toggleIK', () => chartInstance, 'IK(E) [mA]');
     connectToggle('toggleAngle', () => angleChartInstance, 'IK(φ)');
     connectToggle('toggleLevel10', () => brightnessChartInstance, 'I(U) Stufe 10');
     connectToggle('toggleLevel8', () => brightnessChartInstance, 'I(U) Stufe 8');
