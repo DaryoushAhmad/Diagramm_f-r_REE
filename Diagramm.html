@@ -552,10 +552,9 @@
         ik: ikArr[i]
       })).sort((a, b) => a.e - b.e);
 
-      const labels = combined.map(p => p.e);
-      const ulSorted = combined.map(p => p.ul);
-      const ikSorted = combined.map(p => p.ik);
-      const scale = calculateScaleBounds([...ulSorted, ...ikSorted]);
+      const ulPoints = combined.map(p => ({ x: p.e, y: p.ul }));
+      const ikPoints = combined.map(p => ({ x: p.e, y: p.ik }));
+      const scale = calculateScaleBounds([...ulPoints, ...ikPoints].map(p => p.y));
 
       const ctx = document.getElementById('myChart').getContext('2d');
 
@@ -566,11 +565,10 @@
       chartInstance = new Chart(ctx, {
         type: 'line',
         data: {
-          labels: labels,
           datasets: [
             {
               label: 'UL(E)',
-              data: ulSorted,
+              data: ulPoints,
               yAxisID: 'yUL',
               tension: 0,
               pointRadius: 4,
@@ -578,7 +576,7 @@
             },
             {
               label: 'IK(E)',
-              data: ikSorted,
+              data: ikPoints,
               yAxisID: 'yIK',
               tension: 0,
               pointRadius: 4,
@@ -609,10 +607,12 @@
           },
           scales: {
             x: {
+              type: 'linear',
               title: {
                 display: true,
                 text: 'E'
-              }
+              },
+              min: 0
             },
             yUL: {
               type: 'linear',
@@ -692,7 +692,9 @@
         return;
       }
 
-      const scale = calculateScaleBounds(filledValues);
+      const anglePoints = filledAngles.map((angle, idx) => ({ x: angle, y: filledValues[idx] }))
+        .sort((a, b) => a.x - b.x);
+      const scale = calculateScaleBounds(anglePoints.map(point => point.y));
       const ctx = document.getElementById('angleChart').getContext('2d');
 
       if (angleChartInstance) {
@@ -702,11 +704,10 @@
       angleChartInstance = new Chart(ctx, {
         type: 'line',
         data: {
-          labels: filledAngles,
           datasets: [
             {
               label: 'IK(φ)',
-              data: filledValues,
+              data: anglePoints,
               tension: 0,
               pointRadius: 4,
               borderWidth: 2
@@ -730,10 +731,12 @@
           },
           scales: {
             x: {
+              type: 'linear',
               title: {
                 display: true,
                 text: 'Winkel (°)'
-              }
+              },
+              min: 0
             },
             y: {
               title: {
@@ -785,12 +788,11 @@
         p: pArr[i]
       })).sort((a, b) => a.u - b.u);
 
-      const labels = combined.map(p => p.u);
-      const level10Sorted = combined.map(p => p.i10);
-      const level8Sorted = combined.map(p => p.i8);
-      const powerSorted = combined.map(p => p.p);
-      const currentScale = calculateScaleBounds([...level10Sorted, ...level8Sorted]);
-      const powerScale = calculateScaleBounds(powerSorted);
+      const level10Points = combined.map(p => ({ x: p.u, y: p.i10 }));
+      const level8Points = combined.map(p => ({ x: p.u, y: p.i8 }));
+      const powerPoints = combined.map(p => ({ x: p.u, y: p.p }));
+      const currentScale = calculateScaleBounds([...level10Points, ...level8Points].map(point => point.y));
+      const powerScale = calculateScaleBounds(powerPoints.map(point => point.y));
 
       const ctx = document.getElementById('brightnessChart').getContext('2d');
 
@@ -801,11 +803,10 @@
       brightnessChartInstance = new Chart(ctx, {
         type: 'line',
         data: {
-          labels: labels,
           datasets: [
             {
               label: 'I(U) Stufe 10',
-              data: level10Sorted,
+              data: level10Points,
               yAxisID: 'yCurrent',
               borderColor: '#d97706',
               backgroundColor: 'rgba(217, 119, 6, 0.1)',
@@ -815,7 +816,7 @@
             },
             {
               label: 'I(U) Stufe 8',
-              data: level8Sorted,
+              data: level8Points,
               yAxisID: 'yCurrent',
               borderColor: '#0ea5e9',
               backgroundColor: 'rgba(14, 165, 233, 0.1)',
@@ -825,7 +826,7 @@
             },
             {
               label: 'P(U)',
-              data: powerSorted,
+              data: powerPoints,
               yAxisID: 'yPower',
               borderColor: '#16a34a',
               backgroundColor: 'rgba(22, 163, 74, 0.1)',
@@ -853,10 +854,12 @@
           },
           scales: {
             x: {
+              type: 'linear',
               title: {
                 display: true,
                 text: 'U'
-              }
+              },
+              min: 0
             },
             yCurrent: {
               title: {
